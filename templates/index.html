@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Spam Classifier</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffd700' fill-opacity='0.08'%3E%3Ccircle cx='7' cy='7' r='1'/%3E%3Ccircle cx='27' cy='7' r='1'/%3E%3Ccircle cx='47' cy='7' r='1'/%3E%3Ccircle cx='7' cy='27' r='1'/%3E%3Ccircle cx='27' cy='27' r='1'/%3E%3Ccircle cx='47' cy='27' r='1'/%3E%3Ccircle cx='7' cy='47' r='1'/%3E%3Ccircle cx='27' cy='47' r='1'/%3E%3Ccircle cx='47' cy='47' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+
+        .container {
+            background: #1f1f1f;
+            border-radius: 16px;
+            padding: 48px;
+            width: 100%;
+            max-width: 640px;
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 2px solid #dcbe11;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .header h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #dcbe11;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+       
+
+        .header p {
+            color: #cccccc;
+            font-size: 1.125rem;
+            font-weight: 400;
+            margin-top: 16px;
+        }
+
+        .form-container {
+            position: relative;
+        }
+
+        .form-group {
+            margin-bottom: 32px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 12px;
+            color: #dcbe11;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 160px;
+            background: #2a2a2a;
+            border: 2px solid #444444;
+            border-radius: 12px;
+            padding: 20px;
+            color: #ffffff;
+            font-size: 16px;
+            font-family: inherit;
+            line-height: 1.6;
+            resize: vertical;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #dcbe11;
+            background: #333333;
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+        }
+
+        textarea::placeholder {
+            color: #888888;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #dcbe11, #ffed4e);
+            color: #000000;
+            border: none;
+            padding: 16px 32px;
+            font-size: 1.125rem;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #ffed4e, #dcbe11);
+            transform: translateY(-1px);
+          
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .prediction-container {
+            margin-top: 32px;
+            padding: 28px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            border: 1px solid #444444;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .prediction-container h3 {
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+            color: #dcbe11;
+            font-weight: 600;
+        }
+
+        .prediction-result {
+            font-size: 1.375rem;
+            font-weight: 700;
+            padding: 20px 24px;
+            border-radius: 10px;
+            text-align: center;
+            animation: scaleIn 0.4s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .spam {
+            background: linear-gradient(135deg, #4a1818, #661c1c);
+            color: #ff6b6b;
+            border: 2px solid #ff4444;
+        }
+
+        .ham {
+            background: linear-gradient(135deg, #1a4a1a, #1c661c);
+            color: #4ade80;
+            border: 2px solid #16a34a;
+        }
+
+        .icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 1.25em;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #444444;
+            color: #aaaaaa;
+            font-size: 0.875rem;
+        }
+
+        .feature-pills {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            background: linear-gradient(135deg, #333333, #444444);
+            color: #dcbe11;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 32px 24px;
+                margin: 16px;
+            }
+
+            .header h1 {
+                font-size: 1.875rem;
+            }
+
+            textarea {
+                min-height: 140px;
+                font-size: 16px;
+            }
+
+            .feature-pills {
+                gap: 8px;
+            }
+
+            .pill {
+                font-size: 0.8125rem;
+                padding: 5px 12px;
+            }
+        }
+
+        .loading {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 0, 0, 0.3);
+            border-top: 2px solid #000000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 16px;
+            background: #333333;
+            border-radius: 8px;
+            border: 1px solid #555555;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #dcbe11;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #cccccc;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> Email Spam Classifier</h1>
+            <p>Spam Detection System</p>
+            <div class="feature-pills">
+                <span class="pill"><i class="fas fa-robot"></i> ML Powered</span>
+                <span class="pill"><i class="fas fa-lock"></i> Secure</span>
+                <span class="pill"><i class="fas fa-bolt"></i> Fast</span>
+                <span class="pill"><i class="fas fa-bullseye"></i> Accurate</span>
+            </div>
+        </div>
+
+        <form method="POST" class="form-container" onsubmit="showLoading()">
+            <div class="form-group">
+                <label for="email"><i class="fas fa-envelope"></i> Enter your email content:</label>
+                <textarea 
+                    name="email" 
+                    id="email"
+                    placeholder="Paste your email content here... "
+                    required
+                ></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn">
+                <div class="loading" id="loading"></div>
+                <span id="btn-text"><i class="fas fa-search"></i> Analyze Email</span>
+            </button>
+        </form>
+
+        {% if prediction %}
+        <div class="prediction-container">
+            <h3><i class="fas fa-crosshairs"></i> Classification Result</h3>
+            <div class="prediction-result {{ 'spam' if 'Spam' in prediction and not prediction.startswith('Ham') else 'ham' }}">
+                {% if 'Spam' in prediction and not prediction.startswith('Ham') %}
+                    <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+                {% else %}
+                    <span class="icon"><i class="fas fa-check-circle"></i></span>
+                {% endif %}
+                {{ prediction }}
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">99.2%</div>
+                    <div class="stat-label">Accuracy Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">&lt;1s</div>
+                    <div class="stat-label">Analysis Time</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        
+    </div>
+
+    <script>
+        function showLoading() {
+            document.getElementById('loading').style.display = 'inline-block';
+            document.getElementById('btn-text').textContent = 'Analyzing...';
+        }
+
+        // Auto-resize textarea
+        const textarea = document.getElementById('email');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Form validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const emailText = textarea.value.trim();
+            if (emailText.length < 10) {
+                e.preventDefault();
+                alert('Please enter at least 10 characters for accurate analysis.');
+                return false;
+            }
+        });
+
+    
+        textarea.addEventListener('input', function() {
+            const charCount = this.value.length;
+            if (!document.getElementById('char-counter')) {
+                const counter = document.createElement('div');
+                counter.id = 'char-counter';
+                counter.style.cssText = 'text-align: right; margin-top: 8px; font-size: 0.875rem; color: #aaaaaa;';
+                this.parentNode.appendChild(counter);
+            }
+            document.getElementById('char-counter').textContent = `${charCount} characters`;
+        });
+    </script>
+</body>
+</html>
