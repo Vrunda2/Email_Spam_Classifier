@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, render_template
 import pickle
 import re
@@ -30,9 +31,6 @@ def index():
         prediction = f"{'Spam' if result == 1 else 'Ham'} (Spam Probability: {probability:.2f}%)"
     return render_template('index.html', prediction=prediction)
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
 if __name__ == '__main__':
-    app.run(debug=True)
-    app.run(host='0.0.0.0', port=10000)
-
+    port = int(os.environ.get("PORT", 5000))  # Use Render's PORT env if set
+    app.run(host='0.0.0.0', port=port, debug=True)
